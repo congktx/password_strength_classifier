@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
     df1 = df.copy()
     df1 = df1.drop('password', axis = 1)
-    df1 = df1.drop_duplicates()
+    # df1 = df1.drop_duplicates()
     print(df1["strength"].value_counts())
-    
+
     df1.to_csv('./data/processed_data.csv', index=False)

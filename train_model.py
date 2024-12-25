@@ -43,7 +43,8 @@ if __name__ == "__main__":
         penalty= optimal.get('penalty') , 
         C=optimal.get('C'), 
         solver=optimal.get('solver'),
-        class_weight=optimal.get('class_weight')
+        class_weight=optimal.get('class_weight'),
+        multi_class=optimal.get('multi_class')
     )
     model.fit(X_train,y_train)
 
