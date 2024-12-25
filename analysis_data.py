@@ -1,105 +1,69 @@
-import pandas as pd
+import random
+import json
+from zxcvbn import zxcvbn
 import csv
-import math
-import re
-from imblearn.over_sampling import SMOTE
-from nltk.corpus import words
+import pandas as pd
 
-english_words = set(words.words())
+lowercases = "abcdefghijklmnopqrstuvwxyz"
+uppercases = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+digits = "0123456789"
+special_characters = "~!@#$%^&*()_-=+\/|?.<>,;:"
+all_characters = lowercases + uppercases + digits + special_characters
+max_characters = 12
 
-def clean_csv(input_file, output_file):
-    with open(input_file, 'r', newline='', encoding='utf-8') as infile, \
-         open(output_file, 'w', newline='', encoding='utf-8') as outfile:
-        
-        csvreader = csv.reader(infile)
-        csvwriter = csv.writer(outfile)
-        
-        headers = next(csvreader)
-        csvwriter.writerow(headers)
-        
-        for row in csvreader:
-            if len(row) == 2 and len(row[0]) > 0 and len(row[0]) < 40:
-                csvwriter.writerow(row)
+data = []
+num_len = []
+eng_words = ["ace","big","cat","dog","elf","fun","hut","jaw","key","mix","owl","pig","rat","van","zip"]
+array_5d = [[[[[0 
+                for _ in range(max_characters + 1)] 
+                for _ in range(max_characters + 1)] 
+                for _ in range(max_characters + 1)] 
+                for _ in range(max_characters + 1)]
+                for _ in range(max_characters + 1)]
 
-def extract_count_lowercase(password):
-    s = str(password) if pd.notnull(password) else ""
-    count = len([char for char in s if char.islower()])
-    return count
+def generate_password(lower, upper, digit, special, words):
+    password = ""
+    for i in range(words):
+        password += random.choice(eng_words)
+        lower -= 3
+    numbers = [lower, upper, digit, special]
+    for i in range(lower + upper + digit + special):
+        type = random.randint(0, 3)
+        while numbers[type] == 0:
+            type = random.randint(0, 3)
+        numbers[type] -= 1
+        if type == 0:
+            password += random.choice(lowercases)
+        elif type == 1:
+            password += random.choice(uppercases)
+        elif type == 2:
+            password += random.choice(digits)
+        elif type == 3:
+            password += random.choice(special_characters)
+    return password
 
-def extract_count_uppercase(password):
-    s = str(password) if pd.notnull(password) else ""
-    count = len([char for char in s if char.isupper()])
-    return count
+def add_lack_sample_data(filename):
+    with open(filename, "w", newline="") as file:
+        writer = csv.writer(file)
 
-def extract_count_digits(password):
-    s = str(password) if pd.notnull(password) else ""
-    count = len([char for char in s if char.isdigit()])
-    return count
+        for i in range(max_characters, -1, -1):
+            for j in range(max_characters-i, -1, -1):
+                for k in range(max_characters-i-j, -1, -1):
+                    for l in range(max_characters-i-j-k, -1, -1):
+                        for h in range(i//3, -1, -1):
+                            if (i+j+k+l == 0 or array_5d[i][j][k][l][h] > 0):
+                                continue
+                            array_5d[i][j][k][l][h] = 1
+                            password = generate_password(i,j,k,l,h)
+                            analysis = zxcvbn(password)
+                            strength = float(analysis['score'])
+                            new_row = [password, i+j+k+l, i, j, k, l, h, strength]
+                            writer.writerow(new_row)
 
-def extract_count_special(password):
-    s = str(password) if pd.notnull(password) else ""
-    count = len([char for char in s if not char.isalnum()])
-    return count
+if __name__ == "__main__":
+    # add_lack_sample_data("./data/processed_data.csv")
+    df = pd.read_csv('./data/processed_data.csv')
+    print(df['strength'].value_counts())
 
-def extract_length(password):
-    s = str(password) if pd.notnull(password) else ""
-    count = len([char for char in s])
-    return count
 
-def calculate_entropy(password):
-    password = str(password)
-    length = len(password)
-    entropy = 0
-
-    for i in range(0, length):
-        if password[i].islower():
-            entropy += 1 * (i/(i+1))
-        elif password[i].isupper():
-            entropy += 2 * (i/(i+1))
-        elif password[i].isdigit():
-            entropy += 3 * (i/(i+1))
-        elif not password[i].isalnum():
-            entropy += 4 * (i/(i+1))
-    
-    return entropy
-
-def count_continous(password):
-    s = str(password) if pd.notnull(password) else ""
-    continous = re.findall(r'(012|123|234|345|456|567|678|789|890|abc|4321|321|1234|asdf|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz|qwerty)', s.lower())
-    return len(continous)
-
-def count_words(text, dictionary):
-    text = text.lower()
-    text = re.sub(r'[^a-z\s]', '', text)
-    words = text.split()
-    dictionary_words = [word for word in words if word in dictionary]
-    return len(dictionary_words)
-
-def calculate_entropys(s):
-    s = str(s) if pd.notnull(s) else ""
-    prob = [float(s.count(c)) / len(s) for c in set(s)]
-    entropy = - sum([p * math.log(p) / math.log(2.0) for p in prob])
-    return entropy
-
-if __name__ == '__main__':
-    input_file = './data/data.csv'
-    output_file = './data/clean_data.csv'
-    clean_csv(input_file, output_file)
-
-    df = pd.read_csv('./data/clean_data.csv')
-
-    df['length'] = df['password'].apply(extract_length)
-    df['lowers'] = df['password'].apply(extract_count_lowercase)
-    df['uppers'] = df['password'].apply(extract_count_uppercase)
-    df['digits'] = df['password'].apply(extract_count_digits)
-    df['specials'] = df['password'].apply(extract_count_special)
-    df['entropy'] = df['password'].apply(calculate_entropy)
-    df['continous'] = df['password'].apply(count_continous)
-    df['words'] = df['password'].apply(lambda x: count_words(str(x), english_words))
-
-    df1 = df.copy()
-    df1 = df1.drop('password', axis = 1)
-    # df1 = df1.drop_duplicates()
-    print(df1["strength"].value_counts())
-
-    df1.to_csv('./data/processed_data.csv', index=False)
+# password,length,lowers,uppers,digits,specials,words,strength

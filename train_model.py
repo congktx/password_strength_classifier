@@ -6,13 +6,13 @@ import seaborn as sns
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score
 from sklearn.model_selection import GridSearchCV
+from sklearn.inspection import permutation_importance
 
 if __name__ == "__main__":
     df = pd.read_csv('./data/processed_data.csv')
-
-    X = df.drop("strength" ,axis = True)
+    X = df.drop(["strength","password","words"], axis=True)
     y = df['strength']
-    X_train,X_test,y_train,y_test = train_test_split(X,y , test_size = 0.2, random_state=10)
+    X_train,X_test,y_train,y_test = train_test_split(X,y , test_size = 0.2, random_state=42)
 
     scaler = RobustScaler()
     X_train_scaled = scaler.fit_transform(X_train)
@@ -22,9 +22,9 @@ if __name__ == "__main__":
     param_grid = {
         'C': [i/10 for i in range(20)],      
         'penalty': ['l1', 'l2', 'elasticnet'], 
-        'solver': ['saga'],
+        'solver': ['saga', 'lbfgs'],
         'class_weight':['balanced'],    
-        'multi_class': ['ovr', 'multinomial']
+        'multi_class': ['ovr']
     }
     grid_search = GridSearchCV(
         estimator=classifier,        
@@ -51,6 +51,12 @@ if __name__ == "__main__":
     y_pred = model.predict(X_test)
     f1 = f1_score(y_test, y_pred, average='macro')
     print(f1)
+
+    result = permutation_importance(model, X_test, y_test, scoring='f1_macro', random_state=42)
+
+    # 5. In kết quả
+    for i in result.importances_mean.argsort()[::-1]:
+        print(f"Feature {i}: {result.importances_mean[i]:.3f} ± {result.importances_std[i]:.3f}")
 
     # plt.subplots(figsize = (15,5))
 

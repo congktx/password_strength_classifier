@@ -1,2 +1,4 @@
 seaborn==0.13.2
 imblearn==0.0
+pwnedpasswords==2.0.0
+passlib==1.7.4
