@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import RobustScaler, StandardScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.linear_model import LogisticRegression
@@ -10,11 +10,12 @@ from sklearn.inspection import permutation_importance
 
 if __name__ == "__main__":
     df = pd.read_csv('./data/processed_data.csv')
-    X = df.drop(["strength","password","words"], axis=True)
+    X = df.drop(["strength","password","lowers","uppers","digits","specials"], axis=True)
+    # X = df.drop(["strength","password"], axis=True)
     y = df['strength']
     X_train,X_test,y_train,y_test = train_test_split(X,y , test_size = 0.2, random_state=42)
 
-    scaler = RobustScaler()
+    scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
@@ -52,11 +53,10 @@ if __name__ == "__main__":
     f1 = f1_score(y_test, y_pred, average='macro')
     print(f1)
 
-    result = permutation_importance(model, X_test, y_test, scoring='f1_macro', random_state=42)
-
-    # 5. In kết quả
-    for i in result.importances_mean.argsort()[::-1]:
-        print(f"Feature {i}: {result.importances_mean[i]:.3f} ± {result.importances_std[i]:.3f}")
+    # result = permutation_importance(model, X_test, y_test, scoring='f1_macro', random_state=42)
+    # feature_names = ['length', 'lowers', 'uppers', 'digits', 'specials', 'sets']
+    # for i in result.importances_mean.argsort()[::-1]:
+    #     print(f"Feature {feature_names[i]}: {result.importances_mean[i]:.3f} ± {result.importances_std[i]:.3f}")
 
     # plt.subplots(figsize = (15,5))
 

@@ -1,7 +1,5 @@
-from passlib import pwd
+from zxcvbn import zxcvbn
 
-password = "MyP@ssw0rd123"
-stats = pwd.entropy(password)
-
-print(f"Entropy: {stats.entropy:.2f}")
-print(f"Password Strength: {stats.strength:.2f}")
+password = "abczz!!!!!!!"
+analysis = zxcvbn(password)
+print(analysis['score'])
